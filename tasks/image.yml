@@ -1,0 +1,55 @@
+  - name: Build container image
+    containers.podman.podman_image:
+      name: "{{ slurmupgrade_image_name }}"
+      path: "{{ slurmupgrade_image_context }}"
+      force: true
+      build:
+        extra_args: >-
+          --secret id=ark_username,env=ARK_USERNAME
+          --secret id=ark_password,env=ARK_PASSWORD
+          --build-arg OHPC_REPO_URL={{ slurmupgrade_ohpc_repo_url }}
+          --build-arg OHPC_UPDATE_URL={{ slurmupgrade_ohpc_update_url }}
+          --build-arg SLURM_VERSION={{ slurmupgrade_intermediate_ver }}
+          --runtime crun
+    environment:
+      ARK_USERNAME: "{{ ark_username }}"
+      ARK_PASSWORD: "{{ ark_password }}"
+    register: _img_build
+    delegate_to: localhost
+    become: false
+    run_once: true
+
+  - name: Get control host image ID
+    containers.podman.podman_image_info:
+      name: "{{ slurmupgrade_image_name }}"
+    register: _img_remote
+
+  - name: Copy image to control host if it differs
+    when: >-
+      _img_remote.images | length == 0 or
+      _img_remote.images[0].Id != _img_build.image[0].Id
+    block:
+      - name: Save image to archive
+        containers.podman.podman_save:
+          image: "{{ slurmupgrade_image_name }}"
+          dest: "{{ slurmupgrade_image_context }}/{{ slurmupgrade_image_archive }}"
+          format: docker-archive
+          force: true
+        delegate_to: localhost
+        become: false
+        run_once: true
+
+      - name: Copy image archive to control host
+        ansible.builtin.copy:
+          src: "{{ slurmupgrade_image_context }}/{{ slurmupgrade_image_archive }}"
+          dest: "/var/tmp/{{ slurmupgrade_image_archive }}"
+          mode: u=rw,go=
+
+      - name: Load image on control host
+        containers.podman.podman_load:
+          input: "/var/tmp/{{ slurmupgrade_image_archive }}"
+
+      - name: Remove image archive from control host
+        ansible.builtin.file:
+          path: "/var/tmp/{{ slurmupgrade_image_archive }}"
+          state: absent

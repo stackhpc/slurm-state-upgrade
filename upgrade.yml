@@ -8,8 +8,9 @@
     slurmupgrade_ctld_marker: "/var/lib/state/slurm-{{ slurmupgrade_intermediate_ver }}-ctld-converted"
     slurmupgrade_image_name: "slurm-{{ slurmupgrade_intermediate_ver }}"
     slurmupgrade_image_context: "{{ playbook_dir }}/image"
-    # slurmupdate_ohpc_repo_url:
-    # slurmupdate_ohpc_update_url:
+    # slurmupgrade_ohpc_repo_url:
+    # slurmupgrade_ohpc_update_url:
+    slurmupgrade_image_archive: "{{ slurmupgrade_image_name }}.tar"
     
 
   tasks:
@@ -22,23 +23,4 @@
       ansible.builtin.meta: end_host
       when: _ctld_marker.stat.exists
     
-    - name: Build container image
-      containers.podman.podman_image:
-        name: "{{ slurmupgrade_image_name }}"
-        path: "{{ slurmupgrade_image_context }}"
-        force: true
-        build:
-          extra_args: >-
-            --secret id=ark_username,env=ARK_USERNAME
-            --secret id=ark_password,env=ARK_PASSWORD
-            --build-arg OHPC_REPO_URL={{ slurmupdate_ohpc_repo_url }}
-            --build-arg OHPC_UPDATE_URL={{ slurmupdate_ohpc_update_url }}
-            --build-arg SLURM_VERSION={{ slurmupgrade_intermediate_ver }}
-            --runtime crun
-      environment:
-        ARK_USERNAME: "{{ ark_username }}"
-        ARK_PASSWORD: "{{ ark_password }}"
-      register: _img_build
-      delegate_to: localhost
-      become: false
-      run_once: true
+    - import_tasks: tasks/image.yml
