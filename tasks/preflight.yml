@@ -1,0 +1,46 @@
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+- name: Assert munge and mysql are running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services[item ~ '.service'] is defined
+      - ansible_facts.services[item ~ '.service'].state == 'running'
+    fail_msg: "{{ item }} is not running on {{ inventory_hostname }}"
+    quiet: true
+  loop:
+    - munge
+    - mysql
+
+- name: Check munge works
+  ansible.builtin.shell:
+    cmd: munge -n | unmunge
+  changed_when: false
+
+- name: Check for slurmctld state files
+  ansible.builtin.stat:
+    path: "{{ slurmupgrade_state_dir }}/{{ item }}"
+  register: _state_stat
+  loop:
+    - job_state
+    - node_state
+    - resv_state
+    - assoc_usage
+
+- name: Assert that expected slurmctld state files exist
+  ansible.builtin.assert:
+    that: item.stat.exists
+    fail_msg: "{{ slurmupgrade_state_dir }}/{{ item.item }} not found"
+    quiet: true
+  loop: "{{ _state_stat.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Assert slurmctld and slurmdbd are not running
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.services[item ~ '.service'].state != 'running'
+    fail_msg: "{{ item }} is running - you MUST stop all slurm daemons before running this"
+  loop:
+    - slurmctld
+    - slurmdbd
