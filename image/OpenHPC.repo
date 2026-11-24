@@ -1,0 +1,13 @@
+[OpenHPC]
+name = OpenHPC
+baseurl = https://ark.stackhpc.com/pulp/content/OpenHPC/$OHPC_REPO_URL
+gpgcheck = 0
+username = $ARK_USERNAME
+password = $ARK_PASSWORD
+
+[OpenHPC-updates]
+name = OpenHPC-updates
+baseurl = https://ark.stackhpc.com/pulp/content/OpenHPC/$OHPC_UPDATE_URL
+gpgcheck = 0
+username = $ARK_USERNAME
+password = $ARK_PASSWORD

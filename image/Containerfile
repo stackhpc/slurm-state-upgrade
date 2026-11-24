@@ -1,0 +1,30 @@
+FROM quay.io/rockylinux/rockylinux:8
+
+# Repo paths under https://ark.stackhpc.com/pulp/content/OpenHPC/
+ARG OHPC_REPO_URL
+ARG OHPC_UPDATE_URL
+# Exact Slurm version to install, e.g. 23.11.11
+ARG SLURM_VERSION
+
+COPY OpenHPC.repo /etc/yum.repos.d/OpenHPC.repo
+
+# Ark credentials come from build secrets and only exist for this step;
+# dnf substitutes DNF_VAR_<NAME> as $<NAME> in the repo file.
+RUN --mount=type=secret,id=ark_username --mount=type=secret,id=ark_password \
+    export DNF_VAR_ARK_USERNAME="$(cat /run/secrets/ark_username)" \
+           DNF_VAR_ARK_PASSWORD="$(cat /run/secrets/ark_password)" \
+           DNF_VAR_OHPC_REPO_URL="$OHPC_REPO_URL" \
+           DNF_VAR_OHPC_UPDATE_URL="$OHPC_UPDATE_URL" && \
+    dnf install -y epel-release dnf-plugins-core && \
+    dnf config-manager --set-enabled powertools && \
+    dnf install -y \
+      iproute \
+      ohpc-slurm-server \
+      "slurm-ohpc-${SLURM_VERSION}" \
+      "slurm-slurmctld-ohpc-${SLURM_VERSION}" \
+      "slurm-slurmdbd-ohpc-${SLURM_VERSION}" && \
+    dnf clean all
+
+# Keep the script last, so editing it only rebuilds this layer
+COPY convert.sh /usr/local/bin/slurm-convert
+RUN chmod 0755 /usr/local/bin/slurm-convert
