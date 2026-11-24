@@ -20,3 +20,36 @@ Take the volume snapshot BEFORE running this.
 The following variables should be set in your environment:
 
 - TODO:
+
+
+## Process
+
+1. Ensure no jobs are running on the cluster, e.g. via a reservation etc.
+
+2. Stop all slurm daemons
+
+      ansible login,compute -ba "systemctl stop slurmd"
+      ansible control -ba "systemctl stop slurmctld"
+      ansible control -ba "systemctl stop slurmdbd"
+
+3. Stop mysql:
+
+      ansible control -ba "systemctl stop mysql"
+
+4. Stop other services which use the state volume:
+
+      ansible control -ba "systemctl stop mysql opensearch prometheus grafana-server"
+      ansible control -m shell -ba "lsof /var/lib/state || echo nothing active"
+
+5. Create a snapshot of the state volume:
+
+      openstack volume snapshot create --volume <state-volume> --force <state-volume>.old
+
+6. Wait until it shows available:
+
+      openstack volume snapshot show <state-volume>.old
+
+7. Restart mysql ONLY:
+
+      ansible control -ba "systemctl start mysql"
+      ansible control -ba "systemctl start slurmdbd"

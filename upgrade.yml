@@ -11,7 +11,7 @@
     # slurmupgrade_ohpc_repo_url:
     # slurmupgrade_ohpc_update_url:
     slurmupgrade_image_archive: "{{ slurmupgrade_image_name }}.tar"
-    
+    slurmupgrade_state_dir: "{{ appliances_state_dir }}/slurmctld"
 
   tasks:
     - name: Check whether conversion already completed
@@ -24,3 +24,7 @@
       when: _ctld_marker.stat.exists
     
     - import_tasks: tasks/image.yml
+      tags: image
+    
+    - import_tasks: tasks/preflight.yml
+      tags: preflight
