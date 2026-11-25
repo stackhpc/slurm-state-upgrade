@@ -28,28 +28,46 @@ The following variables should be set in your environment:
 
 2. Stop all slurm daemons
 
-        ansible login,compute -ba "systemctl stop slurmd"
-        ansible control -ba "systemctl stop slurmctld"
-        ansible control -ba "systemctl stop slurmdbd"
+   ```shell
+   ansible login,compute -ba "systemctl stop slurmd"
+   ansible control -ba "systemctl stop slurmctld"
+   ansible control -ba "systemctl stop slurmdbd"
+   ```
 
 3. Stop mysql:
 
-      ansible control -ba "systemctl stop mysql"
+   ```shell
+   ansible control -ba "systemctl stop mysql"
+   ```
 
 4. Stop other services which use the state volume:
 
-      ansible control -ba "systemctl stop mysql opensearch prometheus grafana-server"
-      ansible control -m shell -ba "lsof /var/lib/state || echo nothing active"
+   ```shell
+   ansible control -ba "systemctl stop mysql opensearch prometheus grafana-server"
+   ansible control -m shell -ba "lsof /var/lib/state || echo nothing active"
+   ```
 
 5. Create a snapshot of the state volume:
 
-      openstack volume snapshot create --volume <state-volume> --force <state-volume>.old
+   ```shell
+   openstack volume snapshot create --volume <state-volume> --force <state-volume>.old
+   ```
 
 6. Wait until it shows available:
 
-      openstack volume snapshot show <state-volume>.old
+   ```shell
+   openstack volume snapshot show <state-volume>.old
+   ```
 
 7. Restart mysql ONLY:
 
-      ansible control -ba "systemctl start mysql"
-      ansible control -ba "systemctl start slurmdbd"
+   ```shell
+   ansible control -ba "systemctl start mysql"
+   ansible control -ba "systemctl start slurmdbd"
+   ```
+
+8. From inside your normal ansible-slurm-appliance deploy checkout, run this tool e.g.:
+
+   ```shell
+   ANSIBLE_LOG_PATH=upgrade.log ansible-playbook ~/slurm-state-upgrade/upgrade.yml -vv
+   ```
