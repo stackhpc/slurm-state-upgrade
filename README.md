@@ -17,10 +17,19 @@ Conversion runs in two steps, each with its own marker file:
 Once both steps are done, the old host daemons can no longer start.
 Take the volume snapshot BEFORE running this.
 
-The following variables should be set in your environment:
+The following variables should be set in your environment (e.g. in
+`environments/site/inventory/group_vars/all/upgrade_slurm.yml`):
 
-- TODO:
-
+- `slurmupgrade_intermediate_ver`: str specifying the intermediate slurm version, e.g. "23.11.11". This is just used to disambiguate containers/paths etc, so the format does not need to match Slurm's own versioning.
+- `ark_username`: str, username for StackHPC's Ark pulp server.
+- `ark_password`: str, password for StackHPC's Ark pulp server. Typically, indirect this
+  into an Ansible-vaulted file.
+- `slurmupgrade_ohpc_repo_url`: str, the timestamp path for the OpenHPC base repository
+  in Ark providing the required Slurm version at the right distribution, e.g. "2/EL_8/20241218T154614". See
+  `environments/commmon/inventory/group_vars/all/dnf_repo_timestamps.yml`.
+- `slurmupgrade_ohpc_update_url`: str, the timestamp path for the OpenHPC update repository
+   in Ark providing the required Slurm version at the right distribution, e.g. "2/updates/EL_8/20250512T003315". See
+   `environments/commmon/inventory/group_vars/all/dnf_repo_timestamps.yml`.
 
 ## Process
 
