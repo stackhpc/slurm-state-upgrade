@@ -1,0 +1,18 @@
+- name: Check for slurmctld DB conversion marker
+  ansible.builtin.stat:
+    path: "{{ slurmupgrade_ctld_marker }}"
+    register: _ctld_marker
+
+- name: "Convert slurmctld state"
+  when: not _ctld_marker.stat.exists
+  block:
+    - name: Remove any leftover conversion container
+      ansible.builtin.command:
+        cmd: podman rm --force --ignore slurm-convert
+
+        - name: Convert slurmctld state
+          ansible.builtin.command:
+            argv: "{{ slurm_convert_podman_argv + ['ctld'] }}"
+          register: _convert_ctld
+          async: 1200
+          poll: 10      

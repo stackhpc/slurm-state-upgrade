@@ -1,0 +1,30 @@
+- name: "Check for conversion marker ({{ _convert_mode }})"
+  ansible.builtin.stat:
+    path: "{{ _convert_marker_path }}"
+  register: _convert_marker
+
+- name: "Convert {{ _convert_mode }}"
+  when: not _convert_marker.stat.exists
+  block:
+    - name: "Remove any leftover conversion container ({{ _convert_mode }})"
+      ansible.builtin.command:
+        cmd: podman rm --force --ignore slurm-convert
+
+    - name: "Run conversion ({{ _convert_mode }})"
+      ansible.builtin.command:
+        argv: "{{ slurmupgrade_podman_argv + [_convert_mode] }}"
+      register: _convert_run
+      async: "{{ slurmupgrade_convert_timeout | int + 300 }}"
+      poll: 15
+
+    - name: "Show conversion output ({{ _convert_mode }})"
+      ansible.builtin.debug:
+        var: _convert_run.stdout_lines
+
+    - name: "Mark service as converted ({{ _convert_mode }})"
+      ansible.builtin.copy:
+        content: ""
+        dest: "{{ _convert_marker_path }}"
+        owner: root
+        group: root
+        mode: u=rw,go=r

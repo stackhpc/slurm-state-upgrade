@@ -28,9 +28,9 @@ The following variables should be set in your environment:
 
 2. Stop all slurm daemons
 
-      ansible login,compute -ba "systemctl stop slurmd"
-      ansible control -ba "systemctl stop slurmctld"
-      ansible control -ba "systemctl stop slurmdbd"
+        ansible login,compute -ba "systemctl stop slurmd"
+        ansible control -ba "systemctl stop slurmctld"
+        ansible control -ba "systemctl stop slurmdbd"
 
 3. Stop mysql:
 

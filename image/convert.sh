@@ -13,6 +13,7 @@
 # Environment:
 #   DBD_TIMEOUT  seconds to wait for slurmdbd to become ready in dbd mode
 #                (default 3600)
+#   CTLD_STATE_DIR path to StateSaveLocation for slurm control daemon state
 #
 # Exit codes:
 #   0   success
@@ -27,7 +28,7 @@
 set -u
 
 mode=${1:-}
-state_dir=/var/lib/state/slurmctld
+slurmctld_state_dir="${CTLD_STATE_DIR:?CTLD_STATE_DIR must be set}"
 state_files="job_state node_state resv_state assoc_usage"
 dbd_log=/tmp/slurmdbd.log
 ctld_log=/tmp/slurmctld.log
@@ -93,8 +94,8 @@ case "$mode" in
     fi
     if [ "$rc" -eq 0 ]; then
       for f in $state_files; do
-        if [ ! "$state_dir/$f" -nt "$ctld_start" ]; then
-          echo "not rewritten: $state_dir/$f"
+        if [ ! "$slurmctld_state_dir/$f" -nt "$ctld_start" ]; then
+          echo "not rewritten: $slurmctld_state_dir/$f"
           rc=6
         fi
       done

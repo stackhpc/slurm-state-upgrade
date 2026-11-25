@@ -5,26 +5,50 @@
   tags: slurm-convert
   vars:
     # slurmupgrade_intermediate_ver:
-    slurmupgrade_ctld_marker: "/var/lib/state/slurm-{{ slurmupgrade_intermediate_ver }}-ctld-converted"
+    slurmupgrade_ctld_marker: "{{ appliances_state_dir }}/slurm-{{ slurmupgrade_intermediate_ver }}-ctld-converted"
+    slurmupgrade_dbd_marker: "{{ appliances_state_dir }}/slurm-{{ slurmupgrade_intermediate_ver }}-dbd-converted"
     slurmupgrade_image_name: "slurm-{{ slurmupgrade_intermediate_ver }}"
     slurmupgrade_image_context: "{{ playbook_dir }}/image"
     # slurmupgrade_ohpc_repo_url:
     # slurmupgrade_ohpc_update_url:
     slurmupgrade_image_archive: "{{ slurmupgrade_image_name }}.tar"
-    slurmupgrade_state_dir: "{{ appliances_state_dir }}/slurmctld"
+    slurmupgrade_ctld_state_dir: "{{ appliances_state_dir }}/slurmctld"
+    slurmupgrade_convert_timeout: 3600
+    slurmupgrade_podman_argv:
+      - podman
+      - run
+      - --rm
+      - --name=slurm-convert
+      - --network=host
+      - --uts=host
+      - --security-opt=label=disable
+      - "--env=DBD_TIMEOUT={{ slurmupgrade_convert_timeout }}"
+      - "--env=CTLD_STATE_DIR={{ slurmupgrade_ctld_state_dir }}"
+      - --volume=/etc/slurm:/etc/slurm:ro
+      - "--volume={{ appliances_state_dir }}:{{ appliances_state_dir }}"
+      - --volume=/run/munge:/run/munge
+      - --volume=/etc/passwd:/etc/passwd:ro
+      - --volume=/etc/group:/etc/group:ro
+      - "{{ slurmupgrade_image_name }}"
+      - /usr/local/bin/slurm-convert
 
-  tasks:
-    - name: Check whether conversion already completed
-      ansible.builtin.stat:
-        path: "{{ slurmupgrade_ctld_marker }}"
-      register: _ctld_marker
-
-    - name: Skip host if conversion already completed
-      ansible.builtin.meta: end_host
-      when: _ctld_marker.stat.exists
-    
+  tasks:    
     - import_tasks: tasks/image.yml
       tags: image
     
     - import_tasks: tasks/preflight.yml
-      tags: preflight
+      tags:
+        - preflight
+        - always
+
+    - import_tasks: tasks/convert.yml
+      vars:
+        _convert_marker_path: "{{ slurmupgrade_dbd_marker }}"
+        _convert_mode: dbd
+      tags: dbd
+
+    - import_tasks: tasks/convert.yml
+      vars:
+        _convert_marker_path: "{{ slurmupgrade_ctld_marker }}"
+        _convert_mode: ctld
+      tags: slurmctld
