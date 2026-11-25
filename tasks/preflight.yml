@@ -19,13 +19,13 @@
 
 - name: Get StateSaveLocation
   ansible.builtin.command:
-    cmd: grep StateSaveLocation /etc/slurm/slurm.conf
+    cmd: grep -E '^\s*StateSaveLocation\s*=' /etc/slurm/slurm.conf
   register: _grep_slurm_conf
   changed_when: false
 
 - name: Check StateSaveLocation matches slurmupgrade_ctld_state_dir
   ansible.builtin.assert:
-    that: slurmupgrade_ctld_state_dir in (_grep_slurm_conf.stdout | trim)
+    that: slurmupgrade_ctld_state_dir == (_grep_slurm_conf.stdout.split("=")[-1] | trim)
 
 - name: Check for slurmctld state files
   ansible.builtin.stat:
